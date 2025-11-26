@@ -6,6 +6,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'teacher' || !isset($_SES
 }
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/AuditLogger.php';
+
+// Initialize audit logger
+$audit = new AuditLogger($conn);
 
 $message = '';
 $error = '';
@@ -48,12 +52,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             if ($stmt->execute()) {
                                 $message = "Password changed successfully!";
+                                
+                                // Log password change
+                                $audit->logSimple("Change Password (Teacher)");
                             } else {
                                 $error = "Error updating password: " . $stmt->error;
                             }
                             $stmt->close();
                         } else {
                             $error = "Current password is incorrect.";
+                            
+                            // Log failed password change attempt
+                            $audit->logSimple("Failed Password Change Attempt (Teacher)");
                         }
                     } else {
                         $error = "Teacher not found.";
@@ -86,7 +96,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt->bind_param("sssssss", $student_number, $first_name, $last_name, $email, $password, $course, $year_level);
 
                         if ($stmt->execute()) {
+                            $student_id = $stmt->insert_id;
                             $message = "Student added successfully!";
+                            
+                            // Log student addition
+                            $audit->log(
+                                "Add Student",
+                                "students",
+                                $student_id,
+                                null,
+                                [
+                                    'student_number' => $student_number,
+                                    'first_name' => $first_name,
+                                    'last_name' => $last_name,
+                                    'email' => $email,
+                                    'course' => $course,
+                                    'year_level' => $year_level
+                                ]
+                            );
                         } else {
                             $error = "Error adding student: " . $stmt->error;
                         }
@@ -115,7 +142,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt->bind_param("si", $subject_name, $teacher_id);
                         
                         if ($stmt->execute()) {
+                            $subject_id = $stmt->insert_id;
                             $message = "Subject added successfully!";
+                            
+                            // Log subject addition
+                            $audit->log(
+                                "Add Subject",
+                                "subjects",
+                                $subject_id,
+                                null,
+                                [
+                                    'subject_name' => $subject_name,
+                                    'teacher_id' => $teacher_id
+                                ]
+                            );
                         } else {
                             $error = "Error adding subject: " . $stmt->error;
                         }
@@ -132,13 +172,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $grade = $_POST['grade'] ?? '';
 
                 if ($student_id && $subject_id && $grade !== '' && is_numeric($grade)) {
+                    // Check if grade already exists
+                    $check_stmt = $conn->prepare("SELECT id, grade FROM grades WHERE student_id = ? AND subject_id = ?");
+                    $check_stmt->bind_param("ii", $student_id, $subject_id);
+                    $check_stmt->execute();
+                    $check_result = $check_stmt->get_result();
+                    $existing_grade = $check_result->fetch_assoc();
+                    $check_stmt->close();
+                    
+                    // Get student and subject names for logging
+                    $student_stmt = $conn->prepare("SELECT student_number, first_name, last_name FROM students WHERE id = ?");
+                    $student_stmt->bind_param("i", $student_id);
+                    $student_stmt->execute();
+                    $student_result = $student_stmt->get_result();
+                    $student_data = $student_result->fetch_assoc();
+                    $student_stmt->close();
+                    
+                    $subject_stmt = $conn->prepare("SELECT subject_name FROM subjects WHERE id = ?");
+                    $subject_stmt->bind_param("i", $subject_id);
+                    $subject_stmt->execute();
+                    $subject_result = $subject_stmt->get_result();
+                    $subject_data = $subject_result->fetch_assoc();
+                    $subject_stmt->close();
+                    
                     // Use INSERT ... ON DUPLICATE KEY UPDATE to handle both insert and update
                     $stmt = $conn->prepare("INSERT INTO grades (student_id, subject_id, grade) VALUES (?, ?, ?)
                         ON DUPLICATE KEY UPDATE grade = VALUES(grade)");
                     $stmt->bind_param("iid", $student_id, $subject_id, $grade);
 
                     if ($stmt->execute()) {
+                        $grade_id = $existing_grade ? $existing_grade['id'] : $stmt->insert_id;
                         $message = "Grade saved successfully!";
+                        
+                        // Log grade addition or update
+                        if ($existing_grade) {
+                            $audit->log(
+                                "Update Grade",
+                                "grades",
+                                $grade_id,
+                                [
+                                    'student' => $student_data['first_name'] . ' ' . $student_data['last_name'],
+                                    'subject' => $subject_data['subject_name'],
+                                    'grade' => $existing_grade['grade']
+                                ],
+                                [
+                                    'student' => $student_data['first_name'] . ' ' . $student_data['last_name'],
+                                    'subject' => $subject_data['subject_name'],
+                                    'grade' => $grade
+                                ]
+                            );
+                        } else {
+                            $audit->log(
+                                "Add Grade",
+                                "grades",
+                                $grade_id,
+                                null,
+                                [
+                                    'student' => $student_data['first_name'] . ' ' . $student_data['last_name'],
+                                    'subject' => $subject_data['subject_name'],
+                                    'grade' => $grade
+                                ]
+                            );
+                        }
                     } else {
                         $error = "Error saving grade: " . $stmt->error;
                     }

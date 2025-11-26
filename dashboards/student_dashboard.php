@@ -6,6 +6,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student' || !isset($_SES
 }
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/AuditLogger.php';
+
+// Initialize audit logger
+$audit = new AuditLogger($conn);
 
 $student_number = $_SESSION['student_number'];
 $message = '';
@@ -25,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $error = "New password must be at least 6 characters long.";
     } else {
         // Get current student data
-        $stmt = $conn->prepare("SELECT password FROM students WHERE student_number = ?");
+        $stmt = $conn->prepare("SELECT id, password FROM students WHERE student_number = ?");
         $stmt->bind_param("s", $student_number);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -33,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt->close();
         
         if ($student_data) {
- 
+            // Verify current password
             if (password_verify($current_password, $student_data['password']) || $current_password === $student_data['password']) {
                 // Hash new password
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
@@ -44,12 +48,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 
                 if ($stmt->execute()) {
                     $message = "Password changed successfully!";
+                    
+                    // Log password change
+                    $audit->logSimple("Change Password (Student)");
                 } else {
                     $error = "Error updating password: " . $stmt->error;
                 }
                 $stmt->close();
             } else {
                 $error = "Current password is incorrect.";
+                
+                // Log failed password change attempt
+                $audit->logSimple("Failed Password Change Attempt (Student)");
             }
         } else {
             $error = "Student not found.";

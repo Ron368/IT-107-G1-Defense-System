@@ -6,6 +6,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 }
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/AuditLogger.php';
+
+// Initialize audit logger
+$audit = new AuditLogger($conn);
 
 $message = '';
 $error = '';
@@ -21,19 +25,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				$email = $_POST['email'] ?? '';
 				$department = $_POST['department'] ?? '';
 				
-					if ($teacher_username && $first_name && $last_name && $email) {
-						$teacher_password = password_hash($last_name, PASSWORD_DEFAULT);
-						$stmt = $conn->prepare("INSERT INTO teachers (username, password, first_name, last_name, email, department) VALUES (?, ?, ?, ?, ?, ?)");
-						$stmt->bind_param("ssssss", $teacher_username, $teacher_password, $first_name, $last_name, $email, $department);
-					
+				if ($teacher_username && $first_name && $last_name && $email) {
+					$teacher_password = password_hash($last_name, PASSWORD_DEFAULT);
+					$stmt = $conn->prepare("INSERT INTO teachers (username, password, first_name, last_name, email, department) VALUES (?, ?, ?, ?, ?, ?)");
+					$stmt->bind_param("ssssss", $teacher_username, $teacher_password, $first_name, $last_name, $email, $department);
+				
 					if ($stmt->execute()) {
+						$teacher_id = $stmt->insert_id;
 						$message = "Teacher added successfully!";
+						
+						// Log the action
+						$audit->log(
+							"Add Teacher",
+							"teachers",
+							$teacher_id,
+							null,
+							[
+								'username' => $teacher_username,
+								'first_name' => $first_name,
+								'last_name' => $last_name,
+								'email' => $email,
+								'department' => $department
+							]
+						);
 					} else {
 						$error = "Error adding teacher: " . $stmt->error;
 					}
 					$stmt->close();
 				} else {
-						$error = "Please fill in all required fields";
+					$error = "Please fill in all required fields";
 				}
 				break;
 				
@@ -46,11 +66,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				$department = $_POST['department'] ?? '';
 				
 				if ($teacher_id && $teacher_username && $first_name && $last_name && $email) {
+					// Get old values first
+					$old_stmt = $conn->prepare("SELECT username, first_name, last_name, email, department FROM teachers WHERE id = ?");
+					$old_stmt->bind_param("i", $teacher_id);
+					$old_stmt->execute();
+					$old_result = $old_stmt->get_result();
+					$old_data = $old_result->fetch_assoc();
+					$old_stmt->close();
+					
+					// Update teacher
 					$stmt = $conn->prepare("UPDATE teachers SET username = ?, first_name = ?, last_name = ?, email = ?, department = ? WHERE id = ?");
 					$stmt->bind_param("sssssi", $teacher_username, $first_name, $last_name, $email, $department, $teacher_id);
 					
 					if ($stmt->execute()) {
 						$message = "Teacher updated successfully!";
+						
+						// Log the action
+						$audit->log(
+							"Update Teacher",
+							"teachers",
+							$teacher_id,
+							$old_data,
+							[
+								'username' => $teacher_username,
+								'first_name' => $first_name,
+								'last_name' => $last_name,
+								'email' => $email,
+								'department' => $department
+							]
+						);
 					} else {
 						$error = "Error updating teacher: " . $stmt->error;
 					}
@@ -64,11 +108,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				$teacher_id = $_POST['teacher_id'] ?? '';
 				
 				if ($teacher_id) {
+					// Get teacher data before deletion
+					$old_stmt = $conn->prepare("SELECT username, first_name, last_name, email, department FROM teachers WHERE id = ?");
+					$old_stmt->bind_param("i", $teacher_id);
+					$old_stmt->execute();
+					$old_result = $old_stmt->get_result();
+					$old_data = $old_result->fetch_assoc();
+					$old_stmt->close();
+					
+					// Delete teacher
 					$stmt = $conn->prepare("DELETE FROM teachers WHERE id = ?");
 					$stmt->bind_param("i", $teacher_id);
 					
 					if ($stmt->execute()) {
 						$message = "Teacher deleted successfully!";
+						
+						// Log the action
+						$audit->log(
+							"Delete Teacher",
+							"teachers",
+							$teacher_id,
+							$old_data,
+							null
+						);
 					} else {
 						$error = "Error deleting teacher: " . $stmt->error;
 					}
@@ -91,7 +153,8 @@ $teachers_result = $conn->query("SELECT * FROM teachers ORDER BY created_at DESC
 <body>
 	<h1>Admin</h1>
 	<p>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!</p>
-	<a href="../logout.php">Logout</a>
+	<a href="../logout.php">Logout</a> | 
+	<a href="audit_logs.php">View Audit Logs</a>
 
 	<?php if ($message): ?>
 		<p style="color: green;"><?php echo htmlspecialchars($message); ?></p>
@@ -125,7 +188,6 @@ $teachers_result = $conn->query("SELECT * FROM teachers ORDER BY created_at DESC
 	<h2>Teachers Management</h2>
 	<table border="1">
 		<tr>
-			
 			<th>Username</th>
 			<th>Name</th>
 			<th>Email</th>
@@ -209,4 +271,3 @@ $teachers_result = $conn->query("SELECT * FROM teachers ORDER BY created_at DESC
 <?php
 $conn->close();
 ?>
-

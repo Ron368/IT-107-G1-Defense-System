@@ -2,6 +2,10 @@
 session_start();
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/AuditLogger.php';
+
+// Initialize audit logger
+$audit = new AuditLogger($conn);
 
 $role = $_POST['role'] ?? '';
 $login_success = false;
@@ -24,11 +28,18 @@ if ($role === 'admin') {
 				$_SESSION['username'] = $user['username'];
 				$_SESSION['role'] = 'admin';
 				$login_success = true;
+				
+				// Log successful login
+				$audit->logLogin($username, 'admin', true);
 			} else {
 				$error_message = "Invalid password";
+				// Log failed login
+				$audit->logLogin($username, 'admin', false);
 			}
 		} else {
 			$error_message = "Admin user not found";
+			// Log failed login
+			$audit->logLogin($username, 'admin', false);
 		}
 		$stmt->close();
 	} else {
@@ -53,11 +64,18 @@ if ($role === 'admin') {
 				$_SESSION['role'] = 'teacher';
 				$_SESSION['teacher_name'] = $teacher['first_name'] . ' ' . $teacher['last_name'];
 				$login_success = true;
+				
+				// Log successful login
+				$audit->logLogin($username, 'teacher', true);
 			} else {
 				$error_message = "Invalid password";
+				// Log failed login
+				$audit->logLogin($username, 'teacher', false);
 			}
 		} else {
 			$error_message = "Teacher not found";
+			// Log failed login
+			$audit->logLogin($username, 'teacher', false);
 		}
 		$stmt->close();
 	} else {
@@ -79,16 +97,22 @@ if ($role === 'admin') {
 			if (password_verify($password, $student['password']) || $password === $student['password']) {
 				$_SESSION['user_id'] = $student['id'];
 				$_SESSION['student_number'] = $student['student_number'];
-
 				$_SESSION['username'] = $student['student_number'];
 				$_SESSION['role'] = 'student';
 				$_SESSION['student_name'] = $student['first_name'] . ' ' . $student['last_name'];
 				$login_success = true;
+				
+				// Log successful login
+				$audit->logLogin($student_number, 'student', true);
 			} else {
 				$error_message = "Invalid password";
+				// Log failed login
+				$audit->logLogin($student_number, 'student', false);
 			}
 		} else {
 			$error_message = "Student not found";
+			// Log failed login
+			$audit->logLogin($student_number, 'student', false);
 		}
 		$stmt->close();
 	} else {
@@ -113,4 +137,3 @@ if ($login_success) {
 	exit;
 }
 ?>
-

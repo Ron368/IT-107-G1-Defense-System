@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 19, 2025 at 09:59 AM
+-- Generation Time: Nov 26, 2025 at 04:28 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,49 @@ SET time_zone = "+00:00";
 --
 -- Database: `studentmanagement`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `audit_logs`
+--
+
+CREATE TABLE `audit_logs` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `user_id` int(6) UNSIGNED DEFAULT NULL,
+  `username` varchar(50) DEFAULT NULL,
+  `role` enum('admin','teacher','student') NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `table_name` varchar(50) DEFAULT NULL,
+  `record_id` int(11) DEFAULT NULL,
+  `old_values` text DEFAULT NULL,
+  `new_values` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `audit_logs`
+--
+
+INSERT INTO `audit_logs` (`id`, `user_id`, `username`, `role`, `action`, `table_name`, `record_id`, `old_values`, `new_values`, `ip_address`, `user_agent`, `created_at`) VALUES
+(1, 1, 'admin', 'admin', 'Login Success', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:13:27'),
+(2, 1, 'admin', 'admin', 'Login Success', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:14:57'),
+(3, 1, 'admin', 'admin', 'Logout', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:15:55'),
+(4, NULL, 'regie1', 'student', 'Login Failed', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:27:36'),
+(5, 1, 'admin', 'admin', 'Login Success', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:28:04'),
+(6, 1, 'admin', 'admin', 'Logout', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:30:19'),
+(7, NULL, 'regie1', 'teacher', 'Login Failed', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:30:28'),
+(8, NULL, 'regie1', 'teacher', 'Login Failed', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:30:48'),
+(9, NULL, 'admin', 'teacher', 'Login Failed', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:30:58'),
+(10, 1, 'admin', 'admin', 'Login Success', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:31:07'),
+(11, 1, 'admin', 'admin', 'Add Teacher', 'teachers', 6, NULL, '{\"username\":\"estrelle\",\"first_name\":\"estrlle\",\"last_name\":\"adlawon\",\"email\":\"adlawon@gmail.com\",\"department\":\"CCIS\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:32:11'),
+(12, 1, 'admin', 'admin', 'Logout', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:32:36'),
+(13, NULL, 'estrelle', 'teacher', 'Login Failed', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:32:53'),
+(14, 6, 'estrelle', 'teacher', 'Login Success', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:33:47'),
+(15, 6, 'estrelle', 'teacher', 'Logout', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:34:38'),
+
 
 -- --------------------------------------------------------
 
@@ -114,7 +157,8 @@ CREATE TABLE `teachers` (
 --
 
 INSERT INTO `teachers` (`id`, `username`, `password`, `first_name`, `last_name`, `email`, `department`, `created_at`) VALUES
-(5, 'regie1', '$2y$10$Pclp3/cFkJiR/Uz9fUtYOujNy.FLeaTO6zIIn67T6tca4It4Gi2DS', 'Regie', 'Baquiran', 'delcarmenerica01@gmail.com', 'CCIS', '2025-09-19 01:21:18');
+(5, 'regie1', '$2y$10$Pclp3/cFkJiR/Uz9fUtYOujNy.FLeaTO6zIIn67T6tca4It4Gi2DS', 'Regie', 'Baquiran', 'delcarmenerica01@gmail.com', 'CCIS', '2025-09-19 01:21:18'),
+(6, 'estrelle', '$2y$10$YjUNrb3NDnVaIsRRCvLl5.S3O/AGKfVDDPtsjpInTPCYIS0zR5BT.', 'estrlle', 'adlawon', 'adlawon@gmail.com', 'CCIS', '2025-11-26 02:32:11');
 
 -- --------------------------------------------------------
 
@@ -140,6 +184,15 @@ INSERT INTO `users` (`id`, `username`, `password`, `role`, `created_at`) VALUES
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `action` (`action`),
+  ADD KEY `created_at` (`created_at`);
 
 --
 -- Indexes for table `grades`
@@ -180,6 +233,12 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
 -- AUTO_INCREMENT for table `grades`
 --
 ALTER TABLE `grades`
@@ -201,7 +260,7 @@ ALTER TABLE `subjects`
 -- AUTO_INCREMENT for table `teachers`
 --
 ALTER TABLE `teachers`
-  MODIFY `id` int(6) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(6) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`

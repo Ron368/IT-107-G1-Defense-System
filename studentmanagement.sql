@@ -61,8 +61,24 @@ INSERT INTO `audit_logs` (`id`, `user_id`, `username`, `role`, `action`, `table_
 (12, 1, 'admin', 'admin', 'Logout', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:32:36'),
 (13, NULL, 'estrelle', 'teacher', 'Login Failed', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:32:53'),
 (14, 6, 'estrelle', 'teacher', 'Login Success', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:33:47'),
-(15, 6, 'estrelle', 'teacher', 'Logout', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:34:38'),
+(15, 6, 'estrelle', 'teacher', 'Logout', NULL, NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-26 02:34:38');
 
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `login_attempts`
+--
+
+CREATE TABLE `login_attempts` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ip_address` varchar(45) NOT NULL,
+  `username` varchar(50) DEFAULT NULL,
+  `attempt_time` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `ip_address` (`ip_address`),
+  KEY `attempt_time` (`attempt_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 

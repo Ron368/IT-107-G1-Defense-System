@@ -7,6 +7,18 @@ require_once __DIR__ . '/../config/AuditLogger.php';
 // Initialize audit logger
 $audit = new AuditLogger($conn);
 
+// Initialize Security
+$security = new Security($conn);
+$ip_address = $security->getIpAddress();
+$target_user = $_POST['username'] ?? ($_POST['student_number'] ?? 'unknown');
+
+// Check if user is locked out (3 attempts, 15 minute lockout)
+if ($security->checkBruteForce($ip_address, $target_user, 3, 15)) {
+    $error_message = "Too many failed attempts. Please try again in 15 minutes.";
+    header('Location: login.php?role=' . $role . '&error=' . urlencode($error_message));
+    exit;
+}
+
 $role = $_POST['role'] ?? '';
 $login_success = false;
 $error_message = '';
@@ -120,9 +132,11 @@ if ($role === 'admin') {
 	}
 }
 
-$conn->close();
-
 if ($login_success) {
+
+	// Clear failed attempts on success
+    $security->clearLoginAttempts($ip_address, $target_user);
+
 	if ($role === 'admin') {
 		header('Location: ../dashboards/admin_dashboard.php');
 	} elseif ($role === 'teacher') {
@@ -132,8 +146,14 @@ if ($login_success) {
 	}
 	exit;
 } else {
+
+	// Record the failed attempt
+    $security->logFailedAttempt($ip_address, $target_user);
+
 	// Redirect back to login with error
 	header('Location: login.php?role=' . $role . '&error=' . urlencode($error_message));
 	exit;
 }
+
+$conn->close();
 ?>
